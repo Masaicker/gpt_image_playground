@@ -123,7 +123,7 @@ import { clearAgentConversations, clearImages, clearTasks, getAllAgentConversati
 import { callAgentResponsesApi, callBatchImageSingle } from './lib/agentApi'
 import { getFalQueuedImageResult } from './lib/falAiImageApi'
 import { removeKeyedBackgroundFromDataUrl } from './lib/transparentImage'
-import { cleanStaleAgentInputDrafts, clearFailedTasks, deleteAgentRoundFromConversation, deleteFavoriteCollection, editOutputs, getActiveAgentRounds, getErrorToastMessage, getPersistedState, getTaskApiProfile, importData, initStore, markInterruptedOpenAIRunningTasks, migratePersistedState, regenerateAgentAssistantMessage, remapAgentRoundMentionsForPathChange, removeTask, reuseConfig, submitAgentMessage, submitTask, useStore } from './store'
+import { cleanStaleAgentInputDrafts, clearFailedTasks, deleteAgentRoundFromConversation, deleteFavoriteCollection, editOutputs, getActiveAgentRounds, getErrorToastMessage, getPersistedState, getTaskApiProfile, importData, initStore, markInterruptedOpenAIRunningTasks, migratePersistedState, regenerateAgentAssistantMessage, remapAgentRoundMentionsForPathChange, removeTask, reuseConfig, submitAgentMessage, submitTask, taskMatchesFilterStatus, taskMatchesSearchQuery, useStore } from './store'
 
 const imageA = { id: 'image-a', dataUrl: 'data:image/png;base64,a' }
 const imageB = { id: 'image-b', dataUrl: 'data:image/png;base64,b' }
@@ -1683,6 +1683,37 @@ describe('agent context for removed outputs', () => {
     expect(state.tasks.map((item) => item.id)).toEqual(['done-task', 'running-task'])
     expect(state.selectedTaskIds).toEqual(['done-task'])
     expect(state.showToast).toHaveBeenCalledWith('已删除 2 个任务', 'success')
+  })
+
+  it('matches partial failures in failed filters and searches error text', () => {
+    const partial = task({
+      id: 'partial-task',
+      status: 'done',
+      outputImages: ['done-image-a', 'done-image-b'],
+      outputErrors: [{ requestIndex: 2, error: 'Failed to fetch' }],
+    })
+
+    expect(taskMatchesFilterStatus(partial, 'error')).toBe(true)
+    expect(taskMatchesFilterStatus(partial, 'done')).toBe(true)
+    expect(taskMatchesSearchQuery(partial, 'failed to fetch')).toBe(true)
+  })
+
+  it('clears partial failure markers without deleting successful outputs', async () => {
+    const partial = task({
+      id: 'partial-task',
+      status: 'done',
+      outputImages: ['done-image-a'],
+      outputErrors: [{ requestIndex: 1, error: 'Failed to fetch' }],
+    })
+    useStore.setState({ tasks: [partial], selectedTaskIds: ['partial-task'], showToast: vi.fn() })
+
+    await clearFailedTasks(['partial-task'])
+
+    const state = useStore.getState()
+    expect(state.tasks).toHaveLength(1)
+    expect(state.tasks[0]).toMatchObject({ id: 'partial-task', outputImages: ['done-image-a'], outputErrors: undefined })
+    expect(state.selectedTaskIds).toEqual([])
+    expect(state.showToast).toHaveBeenCalledWith('已清除 1 条部分失败记录', 'success')
   })
 
   it('keeps failed tasks created after the cleanup snapshot', async () => {

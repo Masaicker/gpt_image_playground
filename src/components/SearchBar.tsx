@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { ALL_FAVORITES_COLLECTION_ID, clearFailedTasks, getTaskFavoriteCollectionIds, useStore } from '../store'
+import { ALL_FAVORITES_COLLECTION_ID, clearFailedTasks, getTaskFavoriteCollectionIds, useStore, taskMatchesFilterStatus, taskMatchesSearchQuery } from '../store'
 import Select from './Select'
 import { ChevronLeftIcon, CollectionManageIcon, FavoriteIcon, TrashIcon } from './icons'
 
@@ -19,15 +19,12 @@ export default function SearchBar() {
   const failedCount = useStore((s) => {
     const q = s.searchQuery.trim().toLowerCase()
     return s.tasks.filter((task) => {
-      if (task.status !== 'error') return false
+      if (!taskMatchesFilterStatus(task, 'error')) return false
       if (s.filterFavorite) {
         if (!task.isFavorite) return false
         if (s.activeFavoriteCollectionId && s.activeFavoriteCollectionId !== ALL_FAVORITES_COLLECTION_ID && !getTaskFavoriteCollectionIds(task).includes(s.activeFavoriteCollectionId)) return false
       }
-      if (!q) return true
-      const prompt = (task.prompt || '').toLowerCase()
-      const paramStr = JSON.stringify(task.params).toLowerCase()
-      return prompt.includes(q) || paramStr.includes(q)
+      return taskMatchesSearchQuery(task, q)
     }).length
   })
   const setConfirmDialog = useStore((s) => s.setConfirmDialog)
@@ -64,15 +61,12 @@ export default function SearchBar() {
     const q = state.searchQuery.trim().toLowerCase()
     const failedTaskIds = state.tasks
       .filter((task) => {
-        if (task.status !== 'error') return false
+        if (!taskMatchesFilterStatus(task, 'error')) return false
         if (state.filterFavorite) {
           if (!task.isFavorite) return false
           if (state.activeFavoriteCollectionId && state.activeFavoriteCollectionId !== ALL_FAVORITES_COLLECTION_ID && !getTaskFavoriteCollectionIds(task).includes(state.activeFavoriteCollectionId)) return false
         }
-        if (!q) return true
-        const prompt = (task.prompt || '').toLowerCase()
-        const paramStr = JSON.stringify(task.params).toLowerCase()
-        return prompt.includes(q) || paramStr.includes(q)
+        return taskMatchesSearchQuery(task, q)
       })
       .map((task) => task.id)
     const failedTaskCount = failedTaskIds.length
@@ -80,8 +74,8 @@ export default function SearchBar() {
 
     setConfirmDialog({
       title: '清除失败记录',
-      message: `确定清除筛选范围内的失败记录吗？\n将删除 ${failedTaskCount} 条失败记录，关联的孤立图片资源也会被清理。`,
-      confirmText: '删除',
+      message: `确定清除筛选范围内的失败记录吗？\n纯失败任务会被删除；部分失败任务只会清除失败标记，保留已成功图片。共 ${failedTaskCount} 条记录。`,
+      confirmText: '清除',
       cancelText: '取消',
       tone: 'danger',
       action: () => clearFailedTasks(failedTaskIds),
