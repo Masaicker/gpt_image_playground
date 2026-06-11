@@ -44,7 +44,7 @@
 </tr>
 <tr>
 <td width="180" align="center" valign="middle">
-  <a href="https://code0.ai/?source=cooksleep"><img src="" alt="code0" width="150"></a>
+  <a href="https://code0.ai/?source=cooksleep"><img src="https://github.com/user-attachments/assets/515dc874-3b2b-4355-aeae-04eba6e6505d" alt="Code0" width="150"></a>
 </td>
 <td valign="middle"><b><a href="https://code0.ai/?source=cooksleep">Code0</a></b>&nbsp;是一家稳定高速的 AI API 中转服务商，支持 gpt-image、Claude Code、Codex 等主流模型，提供即充即用的 AI 生图与编码能力，面向个人、团队与企业用户。<a href="https://gpt-image-playground.cooksleep.dev/?apiUrl=https%3A%2F%2Fcode0.ai%2Fv1&apiMode=images">点此导入配置</a></td>
 </tr>
